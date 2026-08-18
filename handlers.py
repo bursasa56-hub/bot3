@@ -13,6 +13,7 @@ from keyboards import (
     BTN_LIST,
     cancel_keyboard,
     main_reply_keyboard,
+    notification_keyboard,
     start_inline_keyboard,
     subscriptions_keyboard,
 )
@@ -153,6 +154,15 @@ async def cmd_start(message: Message, state: FSMContext) -> None:
     await state.clear()
     await message.answer(START_TEXT, reply_markup=start_inline_keyboard())
     await message.answer("Выбери действие:", reply_markup=main_reply_keyboard())
+
+
+@router.message(Command("testcopy"))
+async def cmd_testcopy(message: Message) -> None:
+    await message.answer(
+        "🎬 Тест уведомления о новом видео\n\n"
+        "Если видишь кнопку ниже — всё работает.",
+        reply_markup=notification_keyboard("khaby.lame"),
+    )
 
 
 @router.message(Command("help"))

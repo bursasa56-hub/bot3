@@ -5,7 +5,7 @@ import time
 import aiohttp
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
-from aiogram.types import URLInputFile
+from aiogram.types import ReplyParameters, URLInputFile
 
 import database as db
 from config import TELEGRAM_PROXY
@@ -49,24 +49,53 @@ async def _notify(
         video_id,
     )
     markup = notification_keyboard(username)
+    sent = None
     try:
         if cover:
-            await bot.send_photo(
+            try:
+                sent = await bot.send_photo(
+                    telegram_id,
+                    photo=URLInputFile(cover),
+                    caption=text,
+                    reply_markup=markup,
+                )
+            except TelegramBadRequest as exc:
+                logger.warning("Failed to notify %s with photo: %s", telegram_id, exc)
+                sent = await bot.send_message(
+                    telegram_id,
+                    text,
+                    reply_markup=markup,
+                )
+        else:
+            sent = await bot.send_message(
                 telegram_id,
-                photo=URLInputFile(cover),
-                caption=text,
+                text,
                 reply_markup=markup,
             )
-        else:
-            await bot.send_message(telegram_id, text, reply_markup=markup)
     except TelegramForbiddenError:
         logger.info("User %s blocked the bot", telegram_id)
+        return
+    except TelegramBadRequest:
+        logger.info("Could not notify user %s", telegram_id)
+        return
+
+    try:
+        await bot.send_message(
+            telegram_id,
+            f"Юзернейм: <code>{escape(username)}</code>",
+            reply_markup=markup,
+            reply_parameters=ReplyParameters(message_id=sent.message_id),
+        )
     except TelegramBadRequest as exc:
-        logger.warning("Failed to notify %s with photo: %s", telegram_id, exc)
+        logger.warning("Failed to send copy button to %s: %s", telegram_id, exc)
         try:
-            await bot.send_message(telegram_id, text, reply_markup=markup)
+            await bot.send_message(
+                telegram_id,
+                f"Юзернейм: <code>{escape(username)}</code>",
+                reply_markup=markup,
+            )
         except (TelegramForbiddenError, TelegramBadRequest):
-            logger.info("Could not notify user %s", telegram_id)
+            logger.info("Could not send copy button to user %s", telegram_id)
 
 
 async def check_accounts(bot: Bot, http: aiohttp.ClientSession) -> None:
