@@ -31,7 +31,8 @@ def _format_notification(username: str, title: str, nickname: str | None) -> str
         f"🎬 Новое видео в TikTok\n\n"
         f"👤 {who}\n"
         f"📝 {caption}\n\n"
-        f"🔗 {video_url(username, '__ID__')}"
+        f"🔗 {video_url(username, '__ID__')}\n\n"
+        f"👇 кнопка «Скопировать юзернейм»"
     )
 
 

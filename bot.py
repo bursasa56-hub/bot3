@@ -5,6 +5,7 @@ import socket
 import sys
 
 import aiohttp
+from aiohttp import web
 from aiogram import Bot, Dispatcher
 from aiogram.client.default import DefaultBotProperties
 from aiogram.client.session.aiohttp import AiohttpSession
@@ -34,12 +35,29 @@ def _make_session() -> AiohttpSession:
     return session
 
 
+async def _start_health_server() -> web.AppRunner:
+    async def health(_request: web.Request) -> web.Response:
+        return web.Response(text="ok")
+
+    app = web.Application()
+    app.router.add_get("/", health)
+    app.router.add_get("/health", health)
+    runner = web.AppRunner(app)
+    await runner.setup()
+    port = int(os.getenv("PORT", "8080"))
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    logger.info("Health-check сервер слушает порт %s", port)
+    return runner
+
+
 async def main() -> None:
     if not BOT_TOKEN:
         logger.error("Укажи BOT_TOKEN в файле .env")
         sys.exit(1)
 
     await init_db()
+    health_runner = await _start_health_server()
 
     session = _make_session()
     bot = Bot(
@@ -87,6 +105,7 @@ async def main() -> None:
             except asyncio.CancelledError:
                 pass
             await bot.session.close()
+            await health_runner.cleanup()
 
 
 if __name__ == "__main__":
