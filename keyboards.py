@@ -40,7 +40,7 @@ def notification_keyboard(username: str) -> InlineKeyboardMarkup:
         inline_keyboard=[
             [
                 InlineKeyboardButton(
-                    text="📋 Скопировать юзернейм",
+                    text="Скопировать юзернейм",
                     callback_data=f"copyuser:{username}",
                 )
             ]

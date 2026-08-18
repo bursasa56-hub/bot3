@@ -5,12 +5,12 @@ import time
 import aiohttp
 from aiogram import Bot
 from aiogram.exceptions import TelegramBadRequest, TelegramForbiddenError
-from aiogram.types import ReplyParameters, URLInputFile
+from aiogram.types import URLInputFile
 
 import database as db
 from config import TELEGRAM_PROXY
 from keyboards import notification_keyboard
-from tiktok import escape, fetch_videos_fast, video_url
+from tiktok import fetch_videos_fast, video_url
 
 logger = logging.getLogger(__name__)
 
@@ -18,13 +18,8 @@ KEEP_VIDEO_IDS = 20
 
 
 def _format_notification(username: str, title: str, nickname: str | None) -> str:
-    safe_user = escape(username)
-    who = (
-        f"{escape(nickname)} (<code>{safe_user}</code>)"
-        if nickname
-        else f"<code>{safe_user}</code>"
-    )
-    caption = escape(title.strip()) if title else "Новый ролик"
+    who = f"{nickname} (@{username})" if nickname else f"@{username}"
+    caption = (title or "").strip() or "Новый ролик"
     if len(caption) > 400:
         caption = caption[:397] + "..."
     return (
@@ -49,53 +44,35 @@ async def _notify(
         video_id,
     )
     markup = notification_keyboard(username)
-    sent = None
     try:
         if cover:
             try:
-                sent = await bot.send_photo(
+                await bot.send_photo(
                     telegram_id,
                     photo=URLInputFile(cover),
                     caption=text,
-                    reply_markup=markup,
+                    parse_mode=None,
                 )
             except TelegramBadRequest as exc:
                 logger.warning("Failed to notify %s with photo: %s", telegram_id, exc)
-                sent = await bot.send_message(
+                await bot.send_message(
                     telegram_id,
                     text,
-                    reply_markup=markup,
+                    parse_mode=None,
                 )
         else:
-            sent = await bot.send_message(
-                telegram_id,
-                text,
-                reply_markup=markup,
-            )
-    except TelegramForbiddenError:
-        logger.info("User %s blocked the bot", telegram_id)
-        return
-    except TelegramBadRequest:
-        logger.info("Could not notify user %s", telegram_id)
-        return
+            await bot.send_message(telegram_id, text, parse_mode=None)
 
-    try:
         await bot.send_message(
             telegram_id,
-            f"Юзернейм: <code>{escape(username)}</code>",
+            f"Юзернейм: {username}",
             reply_markup=markup,
-            reply_parameters=ReplyParameters(message_id=sent.message_id),
+            parse_mode=None,
         )
-    except TelegramBadRequest as exc:
-        logger.warning("Failed to send copy button to %s: %s", telegram_id, exc)
-        try:
-            await bot.send_message(
-                telegram_id,
-                f"Юзернейм: <code>{escape(username)}</code>",
-                reply_markup=markup,
-            )
-        except (TelegramForbiddenError, TelegramBadRequest):
-            logger.info("Could not send copy button to user %s", telegram_id)
+    except TelegramForbiddenError:
+        logger.info("User %s blocked the bot", telegram_id)
+    except Exception:
+        logger.exception("Could not notify user %s", telegram_id)
 
 
 async def check_accounts(bot: Bot, http: aiohttp.ClientSession) -> None:
