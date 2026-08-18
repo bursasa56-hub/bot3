@@ -18,7 +18,12 @@ KEEP_VIDEO_IDS = 20
 
 
 def _format_notification(username: str, title: str, nickname: str | None) -> str:
-    who = f"{escape(nickname)} (@{username})" if nickname else f"@{username}"
+    safe_user = escape(username)
+    who = (
+        f"{escape(nickname)} (<code>{safe_user}</code>)"
+        if nickname
+        else f"<code>{safe_user}</code>"
+    )
     caption = escape(title.strip()) if title else "Новый ролик"
     if len(caption) > 400:
         caption = caption[:397] + "..."

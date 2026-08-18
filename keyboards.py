@@ -1,5 +1,4 @@
 from aiogram.types import (
-    CopyTextButton,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
@@ -42,7 +41,7 @@ def notification_keyboard(username: str) -> InlineKeyboardMarkup:
             [
                 InlineKeyboardButton(
                     text="📋 Скопировать юзернейм",
-                    copy_text=CopyTextButton(text=username),
+                    callback_data=f"copyuser:{username}",
                 )
             ]
         ]

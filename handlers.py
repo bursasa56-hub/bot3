@@ -194,6 +194,16 @@ async def cb_cancel(callback: CallbackQuery, state: FSMContext) -> None:
     await callback.answer()
 
 
+@router.callback_query(F.data.startswith("copyuser:"))
+async def cb_copy_username(callback: CallbackQuery) -> None:
+    username = callback.data.split(":", 1)[1]
+    await callback.message.answer(
+        f"Юзернейм: <code>{escape(username)}</code>\n"
+        "Нажми на него — скопируется."
+    )
+    await callback.answer()
+
+
 @router.callback_query(F.data.startswith("unsub:"))
 async def cb_unsub(callback: CallbackQuery) -> None:
     username = callback.data.split(":", 1)[1].lower()
