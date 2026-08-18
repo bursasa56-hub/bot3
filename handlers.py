@@ -35,7 +35,8 @@ START_TEXT = (
     "1. Нажми «Добавить человека»\n"
     "2. Отправь юзернейм аккаунта — например, <code>khaby.lame</code> "
     "или <code>@khaby.lame</code>\n"
-    "3. Как только выйдет новое видео, я напишу тебе\n\n"
+    "3. Как только выйдет новое видео, я напишу тебе\n"
+    "Под роликом будет кнопка «Скопировать юзернейм».\n\n"
     "Юзернейм можно просто скинуть в чат в любой момент.\n"
     "Аккаунт должен быть открытым."
 )
@@ -145,7 +146,7 @@ async def _add_account(message: Message, raw_text: str, http: aiohttp.ClientSess
             f"{title}\n"
             f"{video_url(final_username, last.video_id)}"
         )
-    await wait.edit_text(text)
+    await wait.edit_text(text, reply_markup=notification_keyboard(final_username))
     return True
 
 
