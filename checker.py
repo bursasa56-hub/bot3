@@ -9,6 +9,7 @@ from aiogram.types import URLInputFile
 
 import database as db
 from config import TELEGRAM_PROXY
+from keyboards import notification_keyboard
 from tiktok import escape, fetch_videos_fast, video_url
 
 logger = logging.getLogger(__name__)
@@ -42,21 +43,23 @@ async def _notify(
         "__ID__",
         video_id,
     )
+    markup = notification_keyboard(username)
     try:
         if cover:
             await bot.send_photo(
                 telegram_id,
                 photo=URLInputFile(cover),
                 caption=text,
+                reply_markup=markup,
             )
         else:
-            await bot.send_message(telegram_id, text)
+            await bot.send_message(telegram_id, text, reply_markup=markup)
     except TelegramForbiddenError:
         logger.info("User %s blocked the bot", telegram_id)
     except TelegramBadRequest as exc:
         logger.warning("Failed to notify %s with photo: %s", telegram_id, exc)
         try:
-            await bot.send_message(telegram_id, text)
+            await bot.send_message(telegram_id, text, reply_markup=markup)
         except (TelegramForbiddenError, TelegramBadRequest):
             logger.info("Could not notify user %s", telegram_id)
 
